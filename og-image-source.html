@@ -1,0 +1,80 @@
+<!--
+  SOURCE FILE FOR THE WHATSAPP / FACEBOOK LINK PREVIEW IMAGE
+  ===========================================================================
+  This is not part of the website. It exists only to generate og-image.png —
+  the picture people see when the appeal link is shared.
+
+  To change the wording, edit the text below and re-render it with:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=1200,630 \
+      --screenshot="og-image.png" \
+      "og-image-source.html"
+
+  Run that from inside this folder. Then upload the new og-image.png to the
+  repository root, replacing the old one.
+
+  DELIBERATELY NO FUNDRAISING FIGURES. A raised total baked into this image
+  would go stale the moment the appeal moves on, and a wrong number on a
+  shared preview is worse than no number. Everything here stays true
+  indefinitely.
+  ===========================================================================
+-->
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{
+    background:#0E1C16;
+    font-family:"Source Sans 3",-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    color:#F2EFE9;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:74px 80px 66px;
+    position:relative;
+  }
+
+  /* A single gold rule down the left edge — the one ornament, echoing the
+     progress bar on the site. */
+  .edge{position:absolute;left:0;top:0;bottom:0;width:14px;background:#E0B963}
+
+  .eyebrow{
+    font-size:25px;font-weight:700;letter-spacing:.19em;text-transform:uppercase;
+    color:#E0B963;
+  }
+
+  h1{
+    font-size:94px;font-weight:700;line-height:1.04;letter-spacing:-.02em;
+    max-width:17ch;
+  }
+
+  .sub{
+    font-size:35px;line-height:1.35;color:rgba(242,239,233,.80);
+    max-width:37ch;margin-top:26px;text-wrap:balance;
+  }
+
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:40px}
+  .domain{font-size:31px;font-weight:700;color:#E0B963;letter-spacing:-.01em}
+  .charity{font-size:25px;color:rgba(242,239,233,.62);text-align:right;line-height:1.4}
+</style>
+</head>
+<body>
+  <span class="edge"></span>
+
+  <p class="eyebrow">Abdullah Masjid &middot; Hayes</p>
+
+  <div>
+    <h1>Help us buy our masjid outright.</h1>
+    <p class="sub">A place of worship since 1959. The building is not yet ours.</p>
+  </div>
+
+  <div class="foot">
+    <span class="domain">abdullahmasjidappeal.com</span>
+    <span class="charity">Hayes Welfare Association<br>Registered charity 1186145</span>
+  </div>
+</body>
+</html>
