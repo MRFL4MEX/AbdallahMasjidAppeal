@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "abdullah-masjid-appeal",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4173",
+        "--directory",
+        "/Users/ayyazraja/Documents/Claude Code/Abdallah Masjid Project"
+      ],
+      "port": 4173
+    }
+  ]
+}
