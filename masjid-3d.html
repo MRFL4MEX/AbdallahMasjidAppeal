@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Abdullah Masjid, Hayes — Site Model</title>
+<style>
+  :root{
+    --ink:#0E1C16;
+    --line:rgba(224,185,99,.26);
+    --gold:#E0B963;
+    --cream:#F2EFE9;
+    --cream-2:rgba(242,239,233,.76);
+    --cream-3:rgba(242,239,233,.62);
+    --green-lt:#13924b;
+    --blue:#1E5F9E;
+    --r:6px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#eef3f8}
+  body{
+    font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--cream);
+  }
+  #app{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+  canvas:active{cursor:grabbing}
+
+  #loader{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px;background:#eef3f8;z-index:60;transition:opacity .5s ease;
+    padding:30px;text-align:center;
+  }
+  #loader .ring{
+    width:44px;height:44px;border-radius:50%;
+    border:2px solid rgba(30,95,158,.18);border-top-color:var(--blue);
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loader p{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#5b7d9e}
+  #loader.err .ring{display:none}
+  #loader.err p{text-transform:none;letter-spacing:0;font-size:13px;line-height:1.6;
+    color:#33475c;max-width:560px;font-family:ui-monospace,Menlo,Consolas,monospace;text-align:left}
+
+  #title{position:absolute;top:22px;left:26px;z-index:20;pointer-events:none;max-width:min(46vw,430px)}
+  #title .eyebrow{
+    font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--blue);margin-bottom:7px;font-weight:700;
+  }
+  #title h1{margin:0;font-size:clamp(20px,2.5vw,30px);font-weight:600;letter-spacing:-.01em;
+    line-height:1.15;color:#12283a}
+  #title .sub{margin-top:6px;font-size:13px;color:#4a6376;line-height:1.45}
+
+  #caption{
+    position:absolute;left:26px;bottom:96px;z-index:20;max-width:min(44vw,382px);
+    background:rgba(10,21,16,.90);
+    border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;
+    transition:opacity .35s ease, transform .35s ease;
+    box-shadow:0 18px 48px rgba(18,40,58,.20);
+  }
+  #caption.swap{opacity:0;transform:translateY(6px)}
+  #capToggle{
+    position:absolute;top:8px;right:8px;appearance:none;cursor:pointer;
+    width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
+    background:transparent;color:var(--cream-3);font:inherit;font-size:13px;
+    line-height:1;display:grid;place-items:center;padding:0;
+  }
+  #capToggle:hover{color:var(--cream);border-color:var(--gold)}
+  #caption.min{padding:9px 38px 9px 14px;max-width:288px;cursor:pointer}
+  #caption.min #capMore{display:none}
+  #caption.min .year{margin-bottom:2px}
+  #caption.min h2{font-size:13.5px}
+  #caption h2{margin:0 0 4px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+  #caption .year{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px}
+  #caption p{margin:0;font-size:13px;line-height:1.6;color:var(--cream-2)}
+  #caption .note{margin-top:10px;font-size:11px;color:var(--cream-3);line-height:1.5;font-style:italic}
+
+  #timeline{
+    position:absolute;left:50%;transform:translateX(-50%);bottom:26px;z-index:30;
+    display:flex;gap:5px;padding:5px;border-radius:999px;
+    background:rgba(10,21,16,.92);border:1px solid var(--line);
+    box-shadow:0 14px 38px rgba(18,40,58,.22);
+  }
+  #timeline button{
+    appearance:none;border:0;cursor:pointer;font:inherit;
+    padding:10px 20px;border-radius:999px;background:transparent;
+    color:var(--cream-3);font-size:13px;font-weight:500;
+    transition:background .25s ease,color .25s ease;white-space:nowrap;
+  }
+  #timeline button:hover{color:var(--cream)}
+  #timeline button.on{background:var(--green-lt);color:#fff}
+  #timeline button .yr{display:block;font-size:10px;letter-spacing:.14em;opacity:.72;margin-top:1px}
+
+  #fund{
+    position:absolute;right:26px;bottom:150px;z-index:20;width:min(38vw,300px);
+    background:rgba(10,21,16,.92);
+    border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;
+    transition:opacity .4s ease, transform .4s ease;
+    box-shadow:0 18px 48px rgba(18,40,58,.20);
+  }
+  #fund.hide{opacity:0;transform:translateY(10px);pointer-events:none}
+  #fund .lbl{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  #fund .big{font-size:23px;font-weight:600;margin:7px 0 2px;letter-spacing:-.02em}
+  #fund .of{font-size:12px;color:var(--cream-3)}
+  #fund .bar{height:6px;border-radius:999px;background:rgba(242,239,233,.14);margin:12px 0 8px;overflow:hidden}
+  #fund .bar span{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--green-lt),var(--gold));transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
+  #fund .pct{font-size:12px;color:var(--cream-3)}
+  #fund a.cta{
+    display:block;text-align:center;margin-top:14px;padding:11px;border-radius:var(--r);
+    background:var(--gold);color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;
+    transition:transform .18s ease, filter .18s ease;
+  }
+  #fund a.cta:hover{transform:translateY(-1px);filter:brightness(1.07)}
+  #fund .sqm{margin-top:10px;font-size:11.5px;color:var(--cream-3);line-height:1.5;text-align:center}
+
+  .hs{position:absolute;z-index:15;transform:translate(-50%,-50%);cursor:pointer;transition:opacity .35s ease}
+  .hs .dot{
+    width:14px;height:14px;border-radius:50%;background:var(--gold);
+    border:2px solid #fff;box-shadow:0 1px 6px rgba(18,40,58,.35);
+  }
+  .hs .card{
+    position:absolute;left:24px;top:-10px;width:218px;
+    background:rgba(10,21,16,.96);
+    border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;
+    opacity:0;transform:translateX(-6px);pointer-events:none;
+    transition:opacity .22s ease,transform .22s ease;
+    box-shadow:0 14px 38px rgba(18,40,58,.28);
+  }
+  .hs:hover .card,.hs.open .card{opacity:1;transform:translateX(0);pointer-events:auto}
+  .hs .card b{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+  .hs .card .amt{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:5px}
+  .hs .card p{margin:0;font-size:11.5px;line-height:1.5;color:var(--cream-3)}
+  .hs.left .card{left:auto;right:24px;transform:translateX(6px)}
+  .hs.left:hover .card,.hs.left.open .card{transform:translateX(0)}
+  .hs.off{opacity:0;pointer-events:none}
+
+  .an{
+    position:absolute;z-index:12;transform:translate(-50%,-50%);pointer-events:none;
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+    color:var(--blue);white-space:nowrap;transition:opacity .3s ease;
+  }
+  .an::before{
+    content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
+    border-radius:50%;background:var(--blue);opacity:.6;
+  }
+  .an span{
+    display:inline-block;transform:translate(13px,-13px);
+    background:rgba(255,255,255,.86);padding:2px 7px;border:1px solid rgba(30,95,158,.30);
+    border-radius:3px;
+  }
+  .an.room{color:#7a3b16}
+  .an.room span{background:rgba(255,251,244,.92);border-color:rgba(160,90,40,.35)}
+  .an.room::before{background:#a05a28}
+  .an.off{opacity:0}
+
+  #tools{position:absolute;top:22px;right:26px;z-index:30;display:flex;gap:8px}
+  #tools button{
+    appearance:none;cursor:pointer;font:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;
+    padding:9px 14px;border-radius:var(--r);color:#1b3a55;
+    background:rgba(255,255,255,.88);border:1px solid rgba(30,95,158,.30);
+    transition:background .2s ease,color .2s ease;
+  }
+  #tools button:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+  #tools button.hot{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+  #hint{
+    position:absolute;bottom:28px;left:26px;z-index:20;font-size:11.5px;
+    color:#5b7d9e;letter-spacing:.04em;pointer-events:none;
+  }
+  #disclaimer{
+    position:absolute;bottom:28px;right:26px;z-index:20;text-align:right;
+    display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+  }
+  #discBtn{
+    appearance:none;cursor:pointer;border:1px solid rgba(30,95,158,.25);
+    background:rgba(255,255,255,.7);color:#6b8aa6;border-radius:999px;
+    font:inherit;font-size:9.5px;font-weight:600;letter-spacing:.05em;
+    padding:3px 9px;line-height:1.4;
+  }
+  #discBtn:hover{color:#1b3a55;border-color:rgba(30,95,158,.5)}
+  #discTxt{
+    display:none;font-size:10px;color:#5b7d9e;max-width:240px;line-height:1.5;
+    background:rgba(255,255,255,.85);border:1px solid rgba(30,95,158,.22);
+    border-radius:6px;padding:8px 10px;
+  }
+  #disclaimer.open #discTxt{display:block}
+
+  @media (max-width:900px){
+    #title{top:14px;left:16px;max-width:62vw}
+    #caption{left:16px;right:16px;bottom:112px;max-width:none}
+    #fund{display:none}
+    #timeline{bottom:16px;gap:2px;padding:4px}
+    #timeline button{padding:9px 12px;font-size:12px}
+    #hint,#disclaimer{display:none}
+    #tools{top:auto;bottom:74px;right:16px}
+    #tools button{font-size:11px;padding:7px 11px}
+    .hs .card{width:182px}
+    .an{font-size:9px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="stage"></canvas>
+
+  <div id="title">
+    <div class="eyebrow">Waltham Avenue &middot; Hayes UB3 1TF</div>
+    <h1>Abdullah Masjid</h1>
+    <div class="sub">The whole 1,624 m&sup2; site, to scale &mdash; and the building inside and out. Three chapters, and the one you can help write.</div>
+  </div>
+
+  <div id="caption">
+    <button id="capToggle" aria-label="Collapse description" title="Collapse">&minus;</button>
+    <div class="year" id="capYear"></div>
+    <h2 id="capTitle"></h2>
+    <div id="capMore">
+      <p id="capBody"></p>
+      <div class="note" id="capNote"></div>
+    </div>
+  </div>
+
+  <div id="fund" class="hide">
+    <div class="lbl">Building appeal</div>
+    <div class="big" id="raised">&pound;0</div>
+    <div class="of">of &pound;<span id="goal">0</span> &mdash; to own it outright</div>
+    <div class="bar"><span id="barFill"></span></div>
+    <div class="pct" id="pctTxt">0% of the way there</div>
+    <a class="cta" href="#donate">Donate now</a>
+    <div class="sqm">&pound;1,000 sponsors one of the 1,624 square metres &mdash; your name on the donor wall.</div>
+  </div>
+
+  <div id="tools">
+    <button id="zin" title="Zoom in" style="display:none">+</button>
+    <button id="zout" title="Zoom out" style="display:none">&minus;</button>
+    <button id="inside">Look inside</button>
+    <button id="snap">Save image</button>
+  </div>
+
+  <div id="timeline"></div>
+  <div id="hint">Drag to orbit &middot; scroll to zoom</div>
+  <div id="disclaimer">
+    <div id="discTxt">Building footprint and roads from OpenStreetMap survey data; massing from photographs. Interior layout is indicative. The future scheme is a fundraising concept, not a submitted planning application.</div>
+    <button id="discBtn" aria-label="About this model">&#9432; about this model</button>
+  </div>
+
+  <div id="loader"><div class="ring"></div><p>Drawing the site</p></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const loaderEl = document.getElementById('loader');
+function fatal(msg){
+  loaderEl.className = 'err';
+  loaderEl.innerHTML = '<p>' + String(msg).replace(/</g,'&lt;') + '</p>';
+}
+
+try {
+
+/* =====================================================================
+   EDIT ME - fundraiser settings
+   ===================================================================== */
+const CONFIG = {
+  donateUrl : "#donate",
+  raised    : 0,
+  goal      : 1500000,
+  currency  : "£"
+};
+
+/* =====================================================================
+   Engine. Modes: blueprint | solid, plus INSIDE dollhouse cutaway.
+   ===================================================================== */
+const EMBED = /[?&]embed/.test(location.search) ||
+  (function(){ try { return window.self !== window.top; } catch(e){ return true; } })();
+const cv  = document.getElementById('stage');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+let MODE = 'blueprint';
+let INSIDE = false;
+let REFLECT = true;
+const CUT = 2.35;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width  = Math.round(W * DPR);
+  cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function sub(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function dot(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function norm(a){ const L = Math.hypot(a[0],a[1],a[2]) || 1; return [a[0]/L,a[1]/L,a[2]/L]; }
+
+function face(list, pts, col, opt){
+  opt = opt || {};
+  let n = norm(cross(sub(pts[1],pts[0]), sub(pts[2],pts[0])));
+  const c = [0,0,0];
+  pts.forEach(p=>{ c[0]+=p[0]; c[1]+=p[1]; c[2]+=p[2]; });
+  c[0]/=pts.length; c[1]/=pts.length; c[2]/=pts.length;
+  if(opt.ref && dot(n, sub(c, opt.ref)) < 0){ pts = pts.slice().reverse(); n = [-n[0],-n[1],-n[2]]; }
+  if(opt.n) n = opt.n;
+  let colour = col;
+  if(opt.jitter){
+    const j = (Math.random()-0.5) * opt.jitter;
+    colour = [Math.max(0,Math.min(255,col[0]+j)), Math.max(0,Math.min(255,col[1]+j*0.7)),
+              Math.max(0,Math.min(255,col[2]+j*0.5))];
+  }
+  list.push({ p:pts, n:n, c:c, col:colour, kind:opt.kind || 'mass',
+              flat:!!opt.flat, noCull:!!opt.noCull });
+}
+const BOX_F = [[4,5,6,7],[1,0,3,2],[5,1,2,6],[0,4,7,3],[3,7,6,2],[0,1,5,4]];
+function boxF(list, w,h,d, cx,cy,cz, col, opt){
+  opt = opt || {};
+  const ry = opt.ry || 0, hx=w/2, hy=h/2, hz=d/2;
+  const ca = Math.cos(ry), sa = Math.sin(ry);
+  const V = [[-hx,-hy,-hz],[hx,-hy,-hz],[hx,hy,-hz],[-hx,hy,-hz],
+             [-hx,-hy, hz],[hx,-hy, hz],[hx,hy, hz],[-hx,hy, hz]]
+    .map(p=>[ p[0]*ca + p[2]*sa + cx, p[1] + cy, -p[0]*sa + p[2]*ca + cz ]);
+  BOX_F.forEach(f=> face(list, f.map(i=>V[i]), col, opt));
+}
+function cylF(list, cx,cy,cz, rTop,rBot,h,seg, col, opt){
+  opt = opt || {};
+  const y0 = cy - h/2, y1 = cy + h/2, ref = [cx,cy,cz];
+  const P = (r,y,a)=>[cx + r*Math.cos(a), y, cz + r*Math.sin(a)];
+  for(let j=0;j<seg;j++){
+    const a0 = 2*Math.PI*j/seg, a1 = 2*Math.PI*(j+1)/seg;
+    face(list, [P(rBot,y0,a0),P(rBot,y0,a1),P(rTop,y1,a1),P(rTop,y1,a0)], col, {ref:ref, kind:opt.kind});
+  }
+  if(opt.capTop !== false && rTop > 0.001){
+    const top = []; for(let j=0;j<seg;j++) top.push(P(rTop,y1,2*Math.PI*j/seg));
+    face(list, top, col, {ref:[cx,cy-h,cz], kind:opt.kind});
+  }
+  if(opt.capBot && rBot > 0.001){
+    const bot = []; for(let j=0;j<seg;j++) bot.push(P(rBot,y0,2*Math.PI*j/seg));
+    face(list, bot, col, {ref:[cx,cy+h,cz], kind:opt.kind});
+  }
+}
+function domeF(list, cx,cy,cz, r, sy, thetaMax, segU, segV, col, opt){
+  opt = opt || {};
+  const ref = [cx,cy,cz];
+  const P = (t,a)=>[ cx + r*Math.sin(t)*Math.cos(a), cy + r*sy*Math.cos(t), cz + r*Math.sin(t)*Math.sin(a) ];
+  for(let i=0;i<segV;i++){
+    const t0 = thetaMax*i/segV, t1 = thetaMax*(i+1)/segV;
+    for(let j=0;j<segU;j++){
+      const a0 = 2*Math.PI*j/segU, a1 = 2*Math.PI*(j+1)/segU;
+      const q = (i===0) ? [P(t0,a0), P(t1,a1), P(t1,a0)]
+                        : [P(t0,a0), P(t0,a1), P(t1,a1), P(t1,a0)];
+      face(list, q, col, {ref:ref, kind:opt.kind});
+    }
+  }
+}
+function quadF(list, pts, col, opt){
+  face(list, pts, col, Object.assign({flat:true, noCull:true, n:[0,1,0]}, opt||{}));
+}
+function prismF(list, poly, y0, y1, col, opt){
+  opt = opt || {};
+  let cx=0, cz=0;
+  poly.forEach(p=>{ cx+=p[0]; cz+=p[1]; });
+  cx/=poly.length; cz/=poly.length;
+  const ref = [cx,(y0+y1)/2,cz];
+  for(let i=0;i<poly.length;i++){
+    const a = poly[i], b = poly[(i+1)%poly.length];
+    face(list, [[a[0],y0,a[1]],[b[0],y0,b[1]],[b[0],y1,b[1]],[a[0],y1,a[1]]], col,
+         {ref:ref, kind:opt.kind, jitter:opt.jitter});
+  }
+  face(list, poly.map(p=>[p[0],y1,p[1]]), opt.topCol||col, {n:[0,1,0], noCull:true, kind:opt.kind});
+}
+function ribbon(list, pts, w, y, col, kind){
+  const off = [];
+  for(let i=0;i<pts.length;i++){
+    const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)];
+    const dx = b[0]-a[0], dz = b[1]-a[1], L = Math.hypot(dx,dz)||1;
+    off.push([-dz/L*w/2, dx/L*w/2]);
+  }
+  for(let i=0;i<pts.length-1;i++){
+    quadF(list, [
+      [pts[i][0]-off[i][0],   y, pts[i][1]-off[i][1]],
+      [pts[i][0]+off[i][0],   y, pts[i][1]+off[i][1]],
+      [pts[i+1][0]+off[i+1][0], y, pts[i+1][1]+off[i+1][1]],
+      [pts[i+1][0]-off[i+1][0], y, pts[i+1][1]-off[i+1][1]]
+    ], col, {kind:kind||'ground'});
+  }
+}
+function offsetLine(pts, d){
+  const out = [];
+  for(let i=0;i<pts.length;i++){
+    const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)];
+    const dx = b[0]-a[0], dz = b[1]-a[1], L = Math.hypot(dx,dz)||1;
+    out.push([pts[i][0] - dz/L*d, pts[i][1] + dx/L*d]);
+  }
+  return out;
+}
+function house(list, w,d, cx,cz, ry, wallH, ridgeH, col, roofCol, detail){
+  boxF(list, w, wallH, d, cx, wallH/2, cz, col, {ry:ry, kind:'context', jitter:10});
+  const ca=Math.cos(ry), sa=Math.sin(ry);
+  const T = p=>[ p[0]*ca + p[2]*sa + cx, p[1], -p[0]*sa + p[2]*ca + cz ];
+  const hx=w/2, hz=d/2, y0=wallH, y1=wallH+ridgeH;
+  const A=T([-hx,y0,-hz]), B=T([hx,y0,-hz]), Cc=T([hx,y0,hz]), D=T([-hx,y0,hz]);
+  const R1=T([-hx,y1,0]), R2=T([hx,y1,0]);
+  face(list, [A,B,R2,R1], roofCol, {ref:[cx,0,cz], kind:'context'});
+  face(list, [D,Cc,R2,R1], roofCol, {ref:[cx,0,cz], kind:'context'});
+  face(list, [A,R1,D], col, {ref:[cx,y0,cz], kind:'context'});
+  face(list, [B,Cc,R2], col, {ref:[cx,y0,cz], kind:'context'});
+  boxF(list, 0.8, 1.2, 0.8, cx, y1 - 0.1, cz, [122,72,56], {kind:'context'});
+  if(detail){
+    const fz = hz + 0.06;
+    [[-w*0.28, 3.9],[w*0.22, 3.9],[-w*0.28, 1.5]].forEach(q=>{
+      const p = T([q[0], 0, fz]);
+      boxF(list, 1.7, 1.15, 0.1, p[0], q[1], p[2], [58,74,86], {ry:ry, kind:'glass'});
+    });
+    const dp = T([w*0.24, 0, fz]);
+    boxF(list, 0.95, 2.05, 0.1, dp[0], 1.03, dp[2], [92,52,40], {ry:ry, kind:'context'});
+  }
+  const S = [T([-hx,0,-hz]),T([hx,0,-hz]),T([hx,0,hz]),T([-hx,0,hz])].map(p=>[p[0]-1.4,0.028,p[2]-0.9]);
+  quadF(list, S, [70,86,60], {kind:'shadow'});
+}
+
+/* =====================================================================
+   Palette
+   ===================================================================== */
+const C = {
+  brick   : [172, 92, 62],
+  brickDk : [148, 78, 55],
+  concrete: [216, 208, 192],
+  white   : [240, 238, 230],
+  glass   : [ 52,  72,  82],
+  timber  : [ 84,  60,  38],
+  green   : [ 17, 100,  74],
+  greenDk : [ 14,  74,  58],
+  gold    : [203, 164,  40],
+  goldLt  : [224, 185,  99],
+  dome    : [ 20, 112,  90],
+  stone   : [233, 225, 209],
+  stoneWm : [240, 230, 210],
+  grass   : [104, 130,  74],
+  grassSite:[112, 138,  80],
+  tarmac  : [106, 103,  99],
+  road    : [ 92,  92,  94],
+  paint   : [234, 232, 216],
+  pave    : [186, 182, 172],
+  leaf    : [ 63, 107,  58],
+  leafDk  : [ 47,  82,  48],
+  trunk   : [ 80,  65,  47],
+  ctxWall : [198, 180, 160],
+  ctxRoof : [138,  86,  68],
+  fence   : [ 74,  92,  74],
+  car     : [ 98, 108, 118],
+  bronze  : [110,  90,  52],
+  shadow  : [ 70,  86,  60],
+  carpetM : [128,  34,  44],
+  carpetRow:[214, 186, 130],
+  carpetS : [ 26,  86,  70],
+  floorMd : [188, 148,  96],
+  floorWu : [196, 206, 208],
+  floorLb : [212, 202, 182],
+  wallStub: [225, 218, 202],
+  shelf   : [110,  76,  48]
+};
+
+/* =====================================================================
+   SURVEYED GEOMETRY  (metres; +x east, +z south; de-skewed 3.7deg)
+   OSM footprint + OS OpenData road lines + aerial + Street View.
+   Building 24.0 x 18.8 m, 385 m2 ground footprint, on a 1,624 m2 site.
+   ===================================================================== */
+const FOOT = [[-14.9,11.9],[-14.9,0.6],[-11.9,0.5],[-11.9,-4.2],[-1.6,-4.3],[-1.5,-6.9],
+              [5.6,-6.9],[5.6,-4.7],[9.1,-4.6],[9.1,8.0],[7.0,8.1],[7.0,11.9]];
+const HALL = { x0:-1.5, x1:9.1, z0:-6.9, z1:11.9, h:7.2 };
+const REARB= { x0:-11.9, x1:-1.5, z0:-4.2, z1:3.0, h:6.0 };
+const WINGF= { x0:-14.9, x1:-1.5, z0:3.0, z1:11.9, h:4.0 };
+const NOTCH= { x0:7.0, x1:9.1, z0:8.0, z1:11.9 };
+const ROADPTS = [[115,26.0],[90.9,28.3],[54.4,31.1],[41.2,32.0],[34.3,36.1],[31.0,43.3],[30.8,76.0],[31.9,104]];
+const GATE  = [28.6, 42.6];
+const PARK  = { x0:-18, x1:11, z0:13.2, z1:27.5 };
+const QIBLA = [0.904, 0.428];
+
+const SITE = [], SHELL = [], INT = [];
+const G = { past:[], present:[], future:[] };
+
+/* ---------- ground ---------- */
+for(let gx=-120; gx<120; gx+=40)
+  for(let gz=-120; gz<120; gz+=40)
+    quadF(SITE, [[gx,0,gz+40],[gx+40,0,gz+40],[gx+40,0,gz],[gx,0,gz]], C.grass, {kind:'terrain'});
+quadF(SITE, [[-23,0.012,-14],[12,0.012,-14],[12,0.012,13],[-23,0.012,13]], C.grassSite, {kind:'terrain'});
+
+/* ---------- Waltham Avenue (real line) ---------- */
+ribbon(SITE, ROADPTS, 5.6, 0.02, C.road, 'ground');
+ribbon(SITE, offsetLine(ROADPTS,  3.7), 1.8, 0.03, C.pave, 'ground');
+ribbon(SITE, offsetLine(ROADPTS, -3.7), 1.8, 0.03, C.pave, 'ground');
+{
+  for(let i=0;i<ROADPTS.length-1;i++){
+    const a = ROADPTS[i], b = ROADPTS[i+1];
+    const L = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    for(let t=0; t<L; t+=6){
+      const t1 = Math.min(t+2.6, L);
+      const p0 = [a[0]+(b[0]-a[0])*t/L, a[1]+(b[1]-a[1])*t/L];
+      const p1 = [a[0]+(b[0]-a[0])*t1/L, a[1]+(b[1]-a[1])*t1/L];
+      ribbon(SITE, [p0,p1], 0.15, 0.035, C.paint, 'accent');
+    }
+  }
+}
+
+/* ---------- car park + single-track drive (real alignment) ---------- */
+quadF(SITE, [[PARK.x0,0.025,PARK.z1],[PARK.x1,0.025,PARK.z1],[PARK.x1,0.025,PARK.z0],[PARK.x0,0.025,PARK.z0]],
+      C.tarmac, {kind:'ground'});
+const DRIVE = [[9.5,24.5],[14.5,29.5],[21.5,36.2],[26.5,40.6],[GATE[0],GATE[1]]];
+ribbon(SITE, DRIVE, 3.6, 0.03, C.tarmac, 'ground');
+
+function bayLine(x0,z0,x1,z1){
+  const w = 0.13, dx = x1-x0, dz = z1-z0, L = Math.hypot(dx,dz) || 1;
+  const nx = -dz/L*w, nz = dx/L*w;
+  quadF(SITE, [[x0-nx,0.045,z0-nz],[x0+nx,0.045,z0+nz],[x1+nx,0.045,z1+nz],[x1-nx,0.045,z1-nz]],
+        C.paint, {kind:'accent'});
+}
+for(let i=0;i<=9;i++){ const x = -17.5 + i*2.5; bayLine(x, 13.6, x, 18.4); }
+bayLine(-17.5, 18.4, 5.0, 18.4);
+for(let i=0;i<=7;i++){ const x = -17.0 + i*2.5; bayLine(x, 22.6, x, 27.2); }
+bayLine(-17.0, 22.6, 0.5, 22.6);
+
+/* ---------- fences + hedges ---------- */
+function fenceRun(x0,z0,x1,z1,h){
+  const dx = x1-x0, dz = z1-z0, L = Math.hypot(dx,dz), n = Math.max(1, Math.round(L/2.8));
+  for(let i=0;i<=n;i++){
+    const t = i/n;
+    boxF(SITE, 0.32, h*1.1, 0.32, x0+dx*t, h*0.55, z0+dz*t, C.brickDk, {kind:'context'});
+  }
+  boxF(SITE, L, h*0.86, 0.09, (x0+x1)/2, h*0.43, (z0+z1)/2, C.fence,
+       {ry:-Math.atan2(dz,dx), kind:'glass'});
+}
+fenceRun(11.2,26.2, 27.4,40.9, 1.8);
+fenceRun(7.6,24.6, 24.6,41.2, 1.7);
+function hedgeRun(x0,z0,x1,z1,h,w){
+  const dx=x1-x0, dz=z1-z0, L=Math.hypot(dx,dz);
+  boxF(SITE, L, h, w, (x0+x1)/2, h/2, (z0+z1)/2, C.leafDk,
+       {ry:-Math.atan2(dz,dx), kind:'context', jitter:10});
+}
+hedgeRun(-23,-14, 12,-14, 2.3, 1.7);
+hedgeRun(-23,-14, -23,27, 2.3, 1.7);
+hedgeRun(-23,27.5, 7,27.5, 2.0, 1.5);
+hedgeRun(12,-14, 12,22, 2.2, 1.6);
+
+/* ---------- neighbouring houses (real alignment, clear of the drive) ---------- */
+[[38.5,44.1],[52,42.8],[65,41.8],[78,41.0],[91,40.2],[104,39.4]].forEach((p,i)=>{
+  house(SITE, 11.5, 8.2, p[0], p[1], 0.07, 5.3, 2.5, C.ctxWall, C.ctxRoof, i<3);
+});
+[[21.5,50.5],[21.0,61.5],[20.6,72.5],[20.2,83.5]].forEach((p,i)=>{
+  house(SITE, 8.2, 11.0, p[0], p[1], Math.PI/2, 5.3, 2.5, C.ctxWall, C.ctxRoof, i<2);
+});
+[[41.5,48.5],[41.8,59.5],[42.2,70.5],[42.6,81.5]].forEach(p=>{
+  house(SITE, 8.2, 11.0, p[0], p[1], -Math.PI/2, 5.3, 2.5, C.ctxWall, C.ctxRoof, false);
+});
+[[38.6,-53.6,46.5,-41.1],[44.6,-54,51.3,-44.4],[49.6,-55.3,56.1,-46.7],
+ [57.5,-55.8,64,-48.2],[63.5,-56.2,70.2,-45.6]].forEach(b=>{
+  house(SITE, b[2]-b[0], 8.4, (b[0]+b[2])/2, (b[1]+b[3])/2, 0, 5.3, 2.5, C.ctxWall, C.ctxRoof, false);
+});
+boxF(SITE, 19.5, 2.6, 7.8, 62.9, 1.3, -26.6, C.concrete, {kind:'context'});
+[[-46,-6],[-46,6],[-46,18]].forEach(p=> house(SITE, 8.2, 11, p[0], p[1], Math.PI/2, 5.3, 2.5, C.ctxWall, C.ctxRoof, false));
+
+/* ---------- trees ---------- */
+function conifer(list,x,z,h){
+  cylF(list, x, h*0.15, z, 0.22, 0.32, h*0.30, 7, C.trunk, {capTop:false, kind:'context'});
+  for(let i=0;i<3;i++){
+    const r = 1.65 - i*0.44, hh = h*0.40 - i*0.06;
+    cylF(list, x, h*0.28 + i*h*0.22 + hh/2, z, 0, r, hh, 7, i%2?C.leafDk:C.leaf,
+         {capBot:true, kind:'context'});
+  }
+}
+function broadleaf(list,x,z,h,r){
+  cylF(list, x, h*0.30, z, 0.18, 0.30, h*0.60, 7, C.trunk, {capTop:false, kind:'context'});
+  domeF(list, x, h*0.62, z, r, 0.92, Math.PI, 8, 4, C.leaf, {kind:'context'});
+}
+[[13.2,-11,9],[13.5,-4,8.2],[13.2,3,9],[13.5,10,8.4],[13.2,17,8.8],
+ [-20,-12,8.6],[-13,-12.5,9.2],[-5,-12.5,8.4],[3,-12.5,9],[10,-13,8.6],
+ [-21,2,8],[-21,12,8.6]].forEach(t=>conifer(SITE,t[0],t[1],t[2]));
+broadleaf(SITE, 8.8, 30.5, 8.5, 3.1);
+broadleaf(SITE, -20.5, 22, 7.5, 2.7);
+broadleaf(SITE, 34, 52.5, 7, 2.6);
+
+/* ---------- parked cars ---------- */
+function car(x,z,ry,col){
+  boxF(SITE, 4.2, 0.95, 1.8, x, 0.62, z, col, {ry:ry, kind:'context'});
+  boxF(SITE, 2.2, 0.7, 1.66, x - 0.25*Math.cos(ry), 1.34, z + 0.25*Math.sin(ry), col, {ry:ry, kind:'context'});
+  [[1.42,0.82],[1.42,-0.82],[-1.42,0.82],[-1.42,-0.82]].forEach(w=>{
+    boxF(SITE, 0.66, 0.66, 0.24,
+         x + w[0]*Math.cos(ry) + w[1]*Math.sin(ry), 0.34,
+         z - w[0]*Math.sin(ry) + w[1]*Math.cos(ry), [40,40,42], {ry:ry, kind:'context'});
+  });
+}
+[[-16.2,16],[-13.7,16],[-11.2,16],[-6.2,16],[-1.2,16],[1.3,16],
+ [-15.7,24.9],[-10.7,24.9],[-3.2,24.9]].forEach(p=> car(p[0], p[1], Math.PI/2, C.car));
+
+/* =====================================================================
+   THE BUILDING - exact footprint, extruded
+   ===================================================================== */
+prismF(SHELL, FOOT, 0, 0.25, C.concrete, {kind:'plinth'});
+prismF(SHELL, [[HALL.x0,HALL.z1],[HALL.x0,HALL.z0+2.6],[5.6,HALL.z0],[5.6,-4.7],[9.1,-4.6],
+               [9.1,NOTCH.z0],[NOTCH.x0,NOTCH.z0+0.1],[NOTCH.x0,HALL.z1]],
+       0, HALL.h, C.brick, {jitter:14});
+prismF(SHELL, [[REARB.x0,REARB.z1],[REARB.x0,REARB.z0],[REARB.x1,REARB.z0],[REARB.x1,REARB.z1]],
+       0, REARB.h, C.brickDk, {jitter:12});
+prismF(SHELL, [[WINGF.x0,WINGF.z1],[WINGF.x0,3.0],[-11.9,3.0],[-11.9,0.5],[-1.5,0.6],[-1.5,WINGF.z1]],
+       0, WINGF.h, C.brickDk, {jitter:12});
+boxF(SHELL, HALL.x1-HALL.x0+0.6, 0.4, HALL.z1-HALL.z0+0.6, (HALL.x0+HALL.x1)/2, HALL.h+0.2, (HALL.z0+HALL.z1)/2, C.concrete);
+boxF(SHELL, REARB.x1-REARB.x0+0.5, 0.36, REARB.z1-REARB.z0+0.5, (REARB.x0+REARB.x1)/2, REARB.h+0.18, (REARB.z0+REARB.z1)/2, C.concrete);
+boxF(SHELL, WINGF.x1-WINGF.x0+0.5, 0.34, WINGF.z1-WINGF.z0+0.5, (WINGF.x0+WINGF.x1)/2, WINGF.h+0.17, (WINGF.z0+WINGF.z1)/2, C.concrete);
+quadF(SHELL, FOOT.map(p=>[p[0]-1.6,0.03,p[1]-1.0]), C.shadow, {kind:'shadow'});
+
+[-13.6,-10.6,-7.6,-4.6,-1.8].forEach(x=> boxF(SHELL, 0.5, WINGF.h, 0.34, x, WINGF.h/2, WINGF.z1+0.12, C.concrete));
+[-3.2,0.6,4.4].forEach(z=> boxF(SHELL, 0.34, HALL.h, 0.5, HALL.x1+0.12, HALL.h/2, z, C.concrete));
+
+function windowBand(cfg){
+  for(let i=0;i<cfg.count;i++){
+    const cx = cfg.x0 + (i+0.5)*(cfg.span/cfg.count), fw = cfg.w;
+    if(cfg.axis === 'z'){
+      boxF(SHELL, fw, cfg.h, 0.18, cx, cfg.y, cfg.face, C.white);
+      boxF(SHELL, fw*0.88, cfg.h*0.78, 0.08, cx, cfg.y, cfg.face + (cfg.face>0?0.07:-0.07), C.glass, {kind:'glass'});
+    } else {
+      boxF(SHELL, 0.18, cfg.h, fw, cfg.face, cfg.y, cx, C.white);
+      boxF(SHELL, 0.08, cfg.h*0.78, fw*0.88, cfg.face + (cfg.face>0?0.07:-0.07), cfg.y, cx, C.glass, {kind:'glass'});
+    }
+  }
+}
+windowBand({axis:'z', face:WINGF.z1+0.10, x0:-13.3, span:11.2, count:4, w:2.3, h:0.9, y:3.1});
+boxF(SHELL, 3.2, 1.4, 0.14, 0.6, 2.5, HALL.z1+0.08, C.concrete);
+windowBand({axis:'z', face:HALL.z1+0.10, x0:-1.2, span:4.4, count:1, w:3.4, h:1.0, y:4.1});
+boxF(SHELL, 0.14, 1.4, 2.8, HALL.x1+0.08, 2.5, -1.4, C.concrete);
+boxF(SHELL, 0.14, 1.4, 2.8, HALL.x1+0.08, 2.5, 2.6, C.concrete);
+windowBand({axis:'x', face:HALL.x1+0.10, x0:-3.4, span:8.4, count:2, w:2.7, h:1.0, y:4.1});
+windowBand({axis:'x', face:REARB.x0-0.10, x0:-3.9, span:6.6, count:2, w:2.2, h:0.95, y:3.9});
+windowBand({axis:'z', face:REARB.z0-0.10, x0:-11.2, span:9.4, count:3, w:2.2, h:0.95, y:3.9});
+windowBand({axis:'z', face:HALL.z0-0.10, x0:-1.0, span:6.2, count:2, w:2.4, h:1.0, y:5.2});
+windowBand({axis:'x', face:WINGF.x0-0.10, x0:4.2, span:6.6, count:2, w:2.0, h:0.9, y:3.0});
+for(let i=0;i<3;i++) boxF(SHELL, 2.0, 0.4, 1.0, -9.4 + i*3.4, REARB.h + 0.55, -0.6, C.glass, {kind:'glass'});
+
+const SLOT = { cx:5.55, w:2.5, y0:0.5, y1:6.7 };
+{
+  const h = SLOT.y1 - SLOT.y0, my = (SLOT.y0+SLOT.y1)/2;
+  boxF(SHELL, SLOT.w, h, 0.24, SLOT.cx, my, HALL.z1-0.02, [40,38,34]);
+  boxF(SHELL, SLOT.w-0.18, h-0.18, 0.10, SLOT.cx, my, HALL.z1+0.10, C.glass, {kind:'glass'});
+  for(let i=0;i<6;i++){
+    const fx = SLOT.cx - SLOT.w/2 + 0.22 + i*((SLOT.w-0.44)/5);
+    boxF(SHELL, 0.16, h, 0.30, fx, my, HALL.z1+0.16, C.white);
+  }
+  boxF(SHELL, SLOT.w+0.3, 0.28, 0.34, SLOT.cx, SLOT.y1+0.14, HALL.z1+0.14, C.concrete);
+  boxF(SHELL, SLOT.w+0.3, 0.26, 0.34, SLOT.cx, SLOT.y0-0.13, HALL.z1+0.14, C.concrete);
+}
+boxF(SHELL, 1.8, 2.3, 0.14, 8.05, 1.15, NOTCH.z0+0.10, C.timber);
+boxF(SHELL, 2.3, 0.24, 4.2, 8.05, 3.05, NOTCH.z0+2.0, C.concrete);
+cylF(SHELL, 10.6, 3.6, 14.6, 0.09, 0.12, 7.2, 8, C.white, {capTop:false});
+boxF(SHELL, 1.4, 0.13, 0.13, 9.95, 7.18, 14.6, C.white);
+boxF(SHELL, 0.95, 0.17, 0.38, 9.3, 7.1, 14.6, C.white);
+
+/* =====================================================================
+   INTERIOR - indicative layout from public information
+   ===================================================================== */
+{
+  const L = INT;
+  quadF(L, [[-0.9,0.30,11.4],[8.6,0.30,11.4],[8.6,0.30,-6.4],[-0.9,0.30,-6.4]], C.carpetM, {kind:'floor'});
+  quadF(L, [[-11.4,0.30,2.6],[-2.1,0.30,2.6],[-2.1,0.30,-3.8],[-11.4,0.30,-3.8]], C.carpetS, {kind:'floor'});
+  quadF(L, [[-14.4,0.30,11.4],[-8.9,0.30,11.4],[-8.9,0.30,3.5],[-14.4,0.30,3.5]], C.floorMd, {kind:'floor'});
+  quadF(L, [[-8.6,0.30,11.4],[-5.3,0.30,11.4],[-5.3,0.30,3.5],[-8.6,0.30,3.5]], C.floorWu, {kind:'floor'});
+  quadF(L, [[-5.0,0.30,11.4],[-2.1,0.30,11.4],[-2.1,0.30,3.5],[-5.0,0.30,3.5]], C.floorLb, {kind:'floor'});
+  quadF(L, [[7.1,0.30,11.8],[9.0,0.30,11.8],[9.0,0.30,8.2],[7.1,0.30,8.2]], C.floorLb, {kind:'floor'});
+
+  const q = QIBLA, r = [-q[1], q[0]];
+  const RX0=-0.7, RX1=8.4, RZ0=-6.2, RZ1=11.2;
+  const mih = [8.55, 4.6];
+  for(let i=1;i<=13;i++){
+    const c0 = [mih[0] - q[0]*1.25*i, mih[1] - q[1]*1.25*i];
+    let tmin=-1e9, tmax=1e9;
+    [[RX0,RX1,c0[0],r[0]],[RZ0,RZ1,c0[1],r[1]]].forEach(a=>{
+      const lo=a[0], hi=a[1], c=a[2], d=a[3];
+      if(Math.abs(d) < 1e-6){ if(c<lo||c>hi){ tmin=1; tmax=0; } return; }
+      let t0=(lo-c)/d, t1=(hi-c)/d;
+      if(t0>t1){ const tt=t0; t0=t1; t1=tt; }
+      tmin=Math.max(tmin,t0); tmax=Math.min(tmax,t1);
+    });
+    if(tmax - tmin < 1) continue;
+    tmin += 0.3; tmax -= 0.3;
+    const p0 = [c0[0]+r[0]*tmin, c0[1]+r[1]*tmin], p1 = [c0[0]+r[0]*tmax, c0[1]+r[1]*tmax];
+    ribbon(L, [p0,p1], 0.16, 0.325, C.carpetRow, 'accent');
+  }
+  ribbon(L, [[3.4,3.0],[3.4+q[0]*3.2, 3.0+q[1]*3.2]], 0.22, 0.335, C.gold, 'accent');
+  face(L, [[3.4+q[0]*4.0,0.335,3.0+q[1]*4.0],
+           [3.4+q[0]*3.0 - r[0]*0.55, 0.335, 3.0+q[1]*3.0 - r[1]*0.55],
+           [3.4+q[0]*3.0 + r[0]*0.55, 0.335, 3.0+q[1]*3.0 + r[1]*0.55]],
+       C.gold, {flat:true, noCull:true, n:[0,1,0], kind:'accent'});
+
+  const ma = Math.atan2(q[1], q[0]);
+  boxF(L, 2.3, 2.25, 0.35, 8.35, 1.12, 4.6, C.stoneWm, {ry:-ma+Math.PI/2, kind:'accent'});
+  boxF(L, 1.5, 2.05, 0.22, 8.22, 1.02, 4.6, C.greenDk, {ry:-ma+Math.PI/2, kind:'accent'});
+  boxF(L, 1.0, 1.7, 0.18, 8.1, 0.85, 4.6, C.goldLt, {ry:-ma+Math.PI/2, kind:'accent'});
+  boxF(L, 0.9, 0.4, 1.0, 7.9, 0.2, 6.6, C.timber, {kind:'accent'});
+  boxF(L, 0.9, 0.8, 0.66, 7.9, 0.4, 6.94, C.timber, {kind:'accent'});
+  boxF(L, 0.9, 1.2, 0.33, 7.9, 0.6, 7.28, C.timber, {kind:'accent'});
+
+  for(let i=0;i<6;i++) boxF(L, 0.16, 2.1, 0.92, -1.8, 1.05, -3.6 + i*1.14, C.stoneWm, {kind:'accent'});
+  for(let i=0;i<3;i++) boxF(L, 1.7, 1.8, 0.4, 0.6 + i*2.0, 0.9, -6.3, C.shelf, {kind:'accent'});
+  function stub(x0,z0,x1,z1){
+    boxF(L, Math.max(Math.abs(x1-x0),0.18), 2.35, Math.max(Math.abs(z1-z0),0.18),
+         (x0+x1)/2, 1.17, (z0+z1)/2, C.wallStub, {kind:'mass'});
+  }
+  stub(-8.9,3.5, -8.75,8.8);  stub(-8.9,10.1, -8.75,11.4);
+  stub(-5.3,3.5, -5.15,7.6);  stub(-5.3,8.9, -5.15,11.4);
+  stub(-14.4,3.4, -10.6,3.55); stub(-9.3,3.4, -2.1,3.55);
+  stub(-2.1,3.5, -1.95,6.8);  stub(-2.1,8.1, -1.95,11.4);
+  for(let i=0;i<4;i++) boxF(L, 0.55, 0.45, 0.55, -8.1 + i*0.8, 0.22, 4.2, C.stone, {kind:'accent'});
+  boxF(L, 3.1, 0.9, 0.2, -6.9, 0.45, 3.7, C.stone, {kind:'accent'});
+  for(let r2=0;r2<3;r2++) for(let c2=0;c2<2;c2++)
+    boxF(L, 1.5, 0.45, 0.55, -13.2 + c2*2.4, 0.22, 4.8 + r2*2.2, C.floorMd, {kind:'accent'});
+  boxF(L, 0.4, 1.4, 2.6, -2.7, 0.7, 10.0, C.shelf, {kind:'accent'});
+  boxF(L, 0.4, 1.4, 2.0, 8.6, 0.7, 9.6, C.shelf, {kind:'accent'});
+}
+
+/* =====================================================================
+   1965 - CHRIST CHURCH
+   ===================================================================== */
+{
+  const g = G.past;
+  boxF(g, 0.28, 2.9, 0.24, 2.6, 4.3, HALL.z1+0.15, C.white, {kind:'accent'});
+  boxF(g, 1.6, 0.28, 0.24, 2.6, 5.0, HALL.z1+0.15, C.white, {kind:'accent'});
+  boxF(g, 1.8, 1.2, 0.15, -0.4, 2.9, HALL.z1+0.20, C.timber);
+  boxF(g, 1.6, 1.0, 0.07, -0.4, 2.9, HALL.z1+0.30, [214,196,158], {kind:'accent'});
+  boxF(g, 0.85, 1.1, 0.85, 4.2, HALL.h+0.75, -2.0, C.concrete);
+  domeF(g, 4.2, HALL.h+1.1, -2.0, 0.3, 1, Math.PI*0.55, 9, 3, C.bronze, {kind:'accent'});
+  boxF(g, 0.15, 1.9, 0.15, 26.2, 0.95, 39.4, C.timber);
+  boxF(g, 2.2, 1.0, 0.13, 26.2, 2.2, 39.4, [214,196,158], {kind:'accent'});
+}
+
+/* =====================================================================
+   2022 - ABDULLAH MASJID
+   ===================================================================== */
+{
+  const g = G.present;
+  boxF(g, 3.0, 1.9, 0.28, 1.8, 4.6, HALL.z1+0.28, C.greenDk);
+  boxF(g, 2.7, 1.6, 0.10, 1.8, 4.6, HALL.z1+0.44, C.green, {kind:'accent'});
+  boxF(g, 2.2, 0.14, 0.06, 1.8, 5.14, HALL.z1+0.51, C.goldLt, {kind:'accent'});
+  boxF(g, 1.6, 0.12, 0.06, 1.8, 4.12, HALL.z1+0.51, C.goldLt, {kind:'accent'});
+  boxF(g, 1.8, 2.3, 0.16, 8.05, 1.15, 8.18, C.green);
+  boxF(g, 1.6, 1.0, 0.24, -0.4, 2.6, HALL.z1+0.25, C.greenDk);
+  boxF(g, 1.44, 0.82, 0.08, -0.4, 2.6, HALL.z1+0.40, C.green, {kind:'accent'});
+  cylF(g, 9.7, HALL.h+0.55, 10.1, 0.26, 0.36, 1.0, 9, C.stoneWm);
+  domeF(g, 9.7, HALL.h+1.15, 10.1, 0.3, 1, Math.PI, 10, 4, C.gold, {kind:'accent'});
+  cylF(g, 9.7, HALL.h+1.8, 10.1, 0.0, 0.13, 1.0, 8, C.gold, {kind:'accent'});
+  boxF(g, 5.8, 0.95, 0.24, -8.0, 2.1, WINGF.z1+0.25, C.greenDk);
+  boxF(g, 5.5, 0.66, 0.08, -8.0, 2.1, WINGF.z1+0.40, C.green, {kind:'accent'});
+  [[-0.3,13.0],[3.6,13.0]].forEach(p=>{
+    boxF(g, 1.1, 0.5, 1.1, p[0], 0.25, p[1], C.concrete);
+    domeF(g, p[0], 0.7, p[1], 0.55, 1, Math.PI, 8, 4, C.leaf, {kind:'context'});
+  });
+  boxF(g, 0.18, 2.1, 0.18, 26.2, 1.05, 39.4, C.greenDk);
+  boxF(g, 2.6, 1.2, 0.16, 26.2, 2.6, 39.4, C.greenDk);
+  boxF(g, 2.35, 0.95, 0.06, 26.2, 2.6, 39.5, C.green, {kind:'accent'});
+  boxF(g, 1.9, 0.11, 0.05, 26.2, 2.93, 39.56, C.goldLt, {kind:'accent'});
+}
+
+/* =====================================================================
+   THE VISION
+   ===================================================================== */
+const V = {};
+{
+  const g = G.future;
+  const DCX = 3.8, DCZ = 2.5;
+  cylF(g, DCX, HALL.h+0.9, DCZ, 3.9, 4.1, 1.8, 8, C.stoneWm, {capTop:false});
+  for(let i=0;i<8;i++){
+    const a = i*Math.PI/4 + Math.PI/8;
+    boxF(g, 1.3, 1.0, 0.26, DCX + Math.cos(a)*3.95, HALL.h+0.95, DCZ + Math.sin(a)*3.95, C.glass, {ry:-a, kind:'glass'});
+  }
+  cylF(g, DCX, HALL.h+1.95, DCZ, 4.02, 4.02, 0.3, 8, C.gold, {capTop:false, kind:'accent'});
+  domeF(g, DCX, HALL.h+2.0, DCZ, 4.0, 1.28, Math.PI*0.52, 24, 8, C.dome);
+  for(let i=0;i<12;i++){
+    const a = 2*Math.PI*i/12, tw = 0.10;
+    const tx = -Math.sin(a)*tw, tz = Math.cos(a)*tw;
+    const P = t=>[ DCX + 4.08*Math.sin(t)*Math.cos(a), HALL.h+2.0 + 4.08*1.28*Math.cos(t), DCZ + 4.08*Math.sin(t)*Math.sin(a) ];
+    for(let k=0;k<6;k++){
+      const p0 = P(Math.PI*0.52*k/6), p1 = P(Math.PI*0.52*(k+1)/6);
+      face(g, [[p0[0]-tx,p0[1],p0[2]-tz],[p0[0]+tx,p0[1],p0[2]+tz],
+               [p1[0]+tx,p1[1],p1[2]+tz],[p1[0]-tx,p1[1],p1[2]-tz]],
+           C.gold, {noCull:true, kind:'accent',
+                    n:norm([Math.sin(0.8)*Math.cos(a), 0.55, Math.sin(0.8)*Math.sin(a)])});
+    }
+  }
+  boxF(g, 0.18, 1.9, 0.18, DCX, HALL.h+7.3, DCZ, C.gold, {kind:'accent'});
+  domeF(g, DCX, HALL.h+8.3, DCZ, 0.44, 1, Math.PI, 12, 5, C.gold, {kind:'accent'});
+  cylF(g, DCX, HALL.h+9.3, DCZ, 0.0, 0.2, 1.7, 9, C.gold, {kind:'accent'});
+  V.dome = [DCX, HALL.h+7.6, DCZ];
+
+  const MX = 12.6, MZ = 13.4;
+  boxF(g, 2.7, 5.8, 2.7, MX, 2.9, MZ, C.brick, {jitter:12});
+  boxF(g, 3.0, 0.4, 3.0, MX, 6.0, MZ, C.stoneWm);
+  cylF(g, MX, 9.4, MZ, 1.0, 1.16, 6.6, 8, C.stoneWm, {capTop:false});
+  for(let i=0;i<4;i++){
+    const a = i*Math.PI/2 + Math.PI/4;
+    boxF(g, 0.5, 2.2, 0.22, MX + Math.cos(a)*1.05, 9.7, MZ + Math.sin(a)*1.05, C.glass, {ry:-a, kind:'glass'});
+  }
+  cylF(g, MX, 13.0, MZ, 1.65, 1.4, 0.5, 8, C.stoneWm);
+  cylF(g, MX, 13.65, MZ, 1.6, 1.6, 0.8, 8, C.gold, {capTop:false, kind:'accent'});
+  cylF(g, MX, 15.3, MZ, 0.76, 0.86, 2.6, 8, C.stoneWm, {capTop:false});
+  domeF(g, MX, 16.6, MZ, 1.04, 1.35, Math.PI*0.52, 14, 5, C.dome);
+  domeF(g, MX, 17.8, MZ, 0.3, 1, Math.PI, 10, 4, C.gold, {kind:'accent'});
+  cylF(g, MX, 18.6, MZ, 0.0, 0.15, 1.4, 8, C.gold, {kind:'accent'});
+  V.minaret = [MX, 14.2, MZ];
+
+  {
+    const PX = 6.6, PZ = HALL.z1 + 0.35, PW = 7.6, PH = 8.2, AW = 3.9, SH = 2.8;
+    boxF(g, (PW-AW)/2, PH, 1.1, PX - (AW + (PW-AW)/2)/2, PH/2, PZ, C.stoneWm);
+    boxF(g, (PW-AW)/2, PH, 1.1, PX + (AW + (PW-AW)/2)/2, PH/2, PZ, C.stoneWm);
+    const R = AW*0.92, cc2 = R - AW/2, tm = Math.acos(cc2/R), N = 8, BT = 0.75;
+    const zF = PZ + 0.62, zB = PZ + 0.15;
+    for(let sgn=-1; sgn<=1; sgn+=2){
+      const ox = PX - sgn*cc2;
+      const pt = (a,rr)=>[ox + sgn*rr*Math.cos(a), SH + rr*Math.sin(a)];
+      for(let k=0;k<N;k++){
+        const a0 = tm*k/N, a1 = tm*(k+1)/N;
+        const i0p = pt(a0,R), i1p = pt(a1,R), o0 = pt(a0,R+BT), o1 = pt(a1,R+BT);
+        face(g, [[i0p[0],i0p[1],zF],[o0[0],o0[1],zF],[o1[0],o1[1],zF],[i1p[0],i1p[1],zF]], C.stoneWm, {n:[0,0,1]});
+        face(g, [[i1p[0],i1p[1],zB],[o1[0],o1[1],zB],[o0[0],o0[1],zB],[i0p[0],i0p[1],zB]], C.stoneWm, {n:[0,0,-1]});
+        face(g, [[i0p[0],i0p[1],zF],[i1p[0],i1p[1],zF],[i1p[0],i1p[1],zB],[i0p[0],i0p[1],zB]], C.stone, {ref:[PX, SH+R+2, (zF+zB)/2]});
+        face(g, [[o0[0],o0[1],zF],[o1[0],o1[1],zF],[o1[0],o1[1],zB],[o0[0],o0[1],zB]], C.stoneWm, {ref:[PX, SH, (zF+zB)/2]});
+      }
+    }
+    const APEX = SH + R*Math.sin(tm);
+    boxF(g, PW, PH - APEX - 0.5, 1.1, PX, (PH + APEX + 0.5)/2, PZ, C.stoneWm);
+    boxF(g, PW, 0.46, 0.24, PX, PH - 0.3, PZ + 0.56, C.gold, {kind:'accent'});
+    boxF(g, AW - 0.4, SH + 2.2, 0.12, PX, (SH + 2.2)/2 + 0.2, PZ - 0.45, C.glass, {kind:'glass'});
+    boxF(g, 1.9, 2.4, 0.15, PX, 1.2, PZ - 0.35, C.green);
+    boxF(g, 9.0, 0.18, 1.4, PX, 0.09, PZ + 1.35, C.stone, {kind:'ground'});
+    V.portal = [PX, 7.0, PZ + 1.0];
+  }
+
+  {
+    const w = WINGF.x1 - WINGF.x0, d = WINGF.z1 - WINGF.z0;
+    const cx = (WINGF.x0 + WINGF.x1)/2, cz = (WINGF.z0 + WINGF.z1)/2;
+    boxF(g, w - 0.2, 3.1, d - 0.2, cx, WINGF.h + 1.89, cz, C.stoneWm);
+    for(let i=0;i<4;i++){
+      const wx = -13.4 + i*3.2;
+      boxF(g, 1.4, 1.7, 0.2, wx, WINGF.h + 1.9, WINGF.z1 - 0.02, C.glass, {kind:'glass'});
+      domeF(g, wx, WINGF.h + 2.75, WINGF.z1 - 0.02, 0.72, 1, Math.PI*0.5, 9, 3, C.glass, {kind:'glass'});
+      boxF(g, 1.75, 0.15, 0.15, wx, WINGF.h + 3.5, WINGF.z1 + 0.06, C.gold, {kind:'accent'});
+    }
+    boxF(g, w + 0.2, 0.8, d + 0.2, cx, WINGF.h + 3.75, cz, C.stone);
+    boxF(g, w + 0.44, 0.22, d + 0.44, cx, WINGF.h + 4.26, cz, C.stoneWm);
+    [[WINGF.x0+0.7, WINGF.z1-0.7],[WINGF.x1-0.9, WINGF.z1-0.7]].forEach(p=>{
+      cylF(g, p[0], WINGF.h + 5.1, p[1], 0.5, 0.56, 1.8, 8, C.stoneWm, {capTop:false});
+      domeF(g, p[0], WINGF.h + 6.0, p[1], 0.56, 1.3, Math.PI*0.52, 9, 3, C.dome);
+    });
+    V.upper = [cx, WINGF.h + 4.6, WINGF.z1];
+  }
+
+  quadF(g, [[PARK.x0,0.06,PARK.z1],[PARK.x1,0.06,PARK.z1],[PARK.x1,0.06,PARK.z0],[PARK.x0,0.06,PARK.z0]],
+        C.stone, {kind:'ground'});
+  boxF(g, 4.6, 2.1, 0.46, -15.4, 1.05, 20.0, C.stoneWm);
+  boxF(g, 4.1, 1.5, 0.13, -15.4, 1.2, 20.28, C.greenDk);
+  boxF(g, 3.8, 1.2, 0.05, -15.4, 1.2, 20.36, C.green, {kind:'accent'});
+  boxF(g, 3.1, 0.11, 0.04, -15.4, 1.64, 20.4, C.goldLt, {kind:'accent'});
+  V.plaque = [-15.4, 2.4, 20.0];
+
+  [[27.0,39.9],[26.2,45.0]].forEach(p=>{
+    boxF(g, 1.1, 3.0, 1.1, p[0], 1.5, p[1], C.stoneWm);
+    domeF(g, p[0], 3.2, p[1], 0.56, 1, Math.PI, 9, 3, C.gold, {kind:'accent'});
+  });
+  V.gate = [26.6, 3.8, 42.4];
+
+  [[12.4,26.2],[16.8,30.6],[21.2,35.2],[25.0,38.9]].forEach(p=> broadleaf(g, p[0]-2.6, p[1]+2.4, 5.6, 2.0));
+  V.drive = [19, 3.4, 35];
+}
+
+/* =====================================================================
+   States
+   ===================================================================== */
+const STATES = [
+  { key:'past', label:'Christ Church', yr:'1959 — 2022',
+    capYear:'1959 — 2022',
+    capTitle:'Christ Church, Waltham Avenue',
+    capBody:'A parish church begun here in 1959 and rebuilt in 1965 — red stock brick, flat roofs, concrete piers, and a tall glazed slot beside the door. It hides 40 metres behind the houses, reached by a single-track drive off the bend in Waltham Avenue. By the 2010s the congregation had gone.',
+    capNote:'Footprint and roads from OpenStreetMap survey data; massing from photographs.',
+    fund:false, cam:{r:76, phi:1.15, theta:0.34} },
+
+  { key:'present', label:'Abdullah Masjid', yr:'2022 — today',
+    capYear:'December 2022 — today',
+    capTitle:'A masjid for Hayes',
+    capBody:'Hayes Welfare Association took the building on in December 2022. The 1,624 m² site now holds five daily prayers, two Jumuʿah congregations, a sisters’ prayer hall, a girls’ madrasah and janazah services — with a car park that fills twice over on a Friday. Press “Look inside” to see how the building works.',
+    capNote:'The purchase is not yet paid off. The appeal clears the debt on this land and these walls.',
+    fund:false, cam:{r:66, phi:1.16, theta:0.46} },
+
+  { key:'future', label:'What we’re building', yr:'The appeal',
+    capYear:'The appeal',
+    capTitle:'What your donation builds',
+    capBody:'First we own it outright — 1,624 square metres, £1,000 each. Then the same walls can rise: a dome over the prayer hall, a minaret by the entrance, an arched portal onto a resurfaced forecourt, an upper floor for the hafiz school and sisters’ hall, and a gated, tree-lined approach in place of the back lane.',
+    capNote:'Illustrative concept for fundraising. Not a submitted planning application.',
+    fund:true, cam:{r:86, phi:1.13, theta:0.52} }
+];
+
+let current = 1;
+const alpha = { past:0, present:1, future:0 };
+
+const tl = document.getElementById('timeline');
+STATES.forEach((s,i)=>{
+  const b = document.createElement('button');
+  b.innerHTML = s.label + '<span class="yr">' + s.yr + '</span>';
+  b.addEventListener('click', ()=> go(i));
+  tl.appendChild(b);
+});
+const capEl = document.getElementById('caption');
+function setCaption(s){
+  document.getElementById('capYear').textContent  = s.capYear;
+  document.getElementById('capTitle').textContent = s.capTitle;
+  document.getElementById('capBody').textContent  = s.capBody;
+  document.getElementById('capNote').textContent  = s.capNote;
+}
+function go(i){
+  if(i === current) return;
+  current = i;
+  const s = STATES[i];
+  for(let k=0;k<tl.children.length;k++) tl.children[k].classList.toggle('on', k===i);
+  capEl.classList.add('swap');
+  setTimeout(()=>{ setCaption(s); capEl.classList.remove('swap'); }, 300);
+  document.getElementById('fund').classList.toggle('hide', !s.fund);
+  if(s.fund) fillBar();
+  if(!INSIDE){ orbit.tr = s.cam.r; orbit.tphi = s.cam.phi; orbit.tth = s.cam.theta; }
+}
+
+/* =====================================================================
+   Annotations + hotspots
+   ===================================================================== */
+const ANNOS = [
+  { p:[GATE[0], 1.4, GATE[1]+1.5], t:'Entrance · off Waltham Avenue', m:'site' },
+  { p:[19, 1.2, 34.5],  t:'Single-track drive', m:'site' },
+  { p:[-8, 0.8, 20.5],  t:'Car park', m:'site' },
+  { p:[3.8, 7.8, 2.5],  t:'Prayer hall', m:'site' },
+  { p:[-8, 4.6, 7.5],   t:'Wing', m:'site' },
+  { p:[-6.7, 6.6, -0.6], t:'Rear hall', m:'site' },
+  { p:[8.05, 3.4, 10.0], t:'Entrance', m:'site' },
+  { p:[3.6, 1.7, 1.6],   t:'Main prayer hall', m:'in' },
+  { p:[8.35, 1.9, 4.6],  t:'Mihrab · qibla 119°', m:'in' },
+  { p:[-6.7, 1.7, -0.6], t:'Sisters’ prayer hall', m:'in' },
+  { p:[-11.6, 1.5, 7.4], t:'Madrasah', m:'in' },
+  { p:[-6.9, 1.5, 7.4],  t:'Wudu', m:'in' },
+  { p:[-3.5, 1.5, 7.4],  t:'Lobby', m:'in' },
+  { p:[1.6, 1.5, -5.6],  t:'Library', m:'in' },
+  { p:[8.05, 1.6, 10.2], t:'Entrance', m:'in' }
+];
+const anEls = ANNOS.map(a=>{
+  const el = document.createElement('div');
+  el.className = 'an' + (a.m === 'in' ? ' room' : '');
+  el.innerHTML = '<span>' + a.t + '</span>';
+  document.getElementById('app').appendChild(el);
+  return { el:el, pos:a.p, m:a.m };
+});
+
+const HOTSPOTS = [
+  {p:'plaque',  side:'left',  title:'Sponsor a square metre', amt:'£1,000',
+   text:'The appeal itself: 1,624 square metres to buy outright. Sponsor one and your name goes on the donor wall, in shaa’ Allah.'},
+  {p:'gate',    side:'right', title:'A proper entrance', amt:'Later phase',
+   text:'Gate piers, railings and a lit sign at the bend in Waltham Avenue — so first-time visitors can find us.'},
+  {p:'dome',    side:'right', title:'Dome & lantern', amt:'Later phase',
+   text:'An octagonal drum with clerestory glazing over the prayer hall — daylight onto the carpet at every salah.'},
+  {p:'minaret', side:'right', title:'Minaret', amt:'Later phase',
+   text:'A landmark by the entrance, visible from the avenue, so nobody in Hayes has to ask where the masjid is.'},
+  {p:'upper',   side:'left',  title:'Hafiz school & sisters’ hall', amt:'Later phase',
+   text:'A new first floor over the wing: a dedicated Qur’an memorisation school and a proper sisters’ prayer hall.'},
+  {p:'portal',  side:'left',  title:'Entrance portal', amt:'Later phase',
+   text:'A step-free arched entrance where the door already is, opening onto a resurfaced forecourt.'}
+];
+const hsEls = [];
+HOTSPOTS.forEach(h=>{
+  const el = document.createElement('div');
+  el.className = 'hs off' + (h.side === 'left' ? ' left' : '');
+  el.innerHTML = '<div class="dot"></div><div class="card"><b>' + h.title +
+                 '</b><div class="amt">' + h.amt + '</div><p>' + h.text + '</p></div>';
+  el.addEventListener('click', ()=> el.classList.toggle('open'));
+  document.getElementById('app').appendChild(el);
+  hsEls.push({ el:el, pos:V[h.p] });
+});
+
+/* =====================================================================
+   Camera
+   ===================================================================== */
+const orbit = {
+  r:66, phi:1.16, th:0.46, tr:66, tphi:1.16, tth:0.46,
+  centre:[2, 2.0, 12], auto:true, idle:0
+};
+let eye = [0,0,0], basis = null, FOCAL = 1;
+
+function updateCamera(){
+  const sp = Math.sin(orbit.phi), cp = Math.cos(orbit.phi);
+  eye = [
+    orbit.centre[0] + orbit.r * sp * Math.sin(orbit.th),
+    Math.max(3.5, orbit.centre[1] + orbit.r * cp),
+    orbit.centre[2] + orbit.r * sp * Math.cos(orbit.th)
+  ];
+  const fwd   = norm(sub(orbit.centre, eye));
+  const right = norm(cross(fwd, [0,1,0]));
+  const up    = cross(right, fwd);
+  basis = { r:right, u:up, f:fwd };
+}
+function toView(p){
+  const d = sub(p, eye);
+  return [ dot(d, basis.r), dot(d, basis.u), dot(d, basis.f) ];
+}
+function project(v){
+  const s = FOCAL / v[2];
+  return [ W/2 + v[0] * s * (H/2), H/2 - v[1] * s * (H/2) ];
+}
+{
+  let down = false, lx = 0, ly = 0, pinch = 0;
+  const stop = ()=>{ orbit.auto = false; orbit.idle = 0; };
+  cv.addEventListener('pointerdown', e=>{
+    down = true; lx = e.clientX; ly = e.clientY; stop();
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  cv.addEventListener('pointermove', e=>{
+    if(!down) return;
+    orbit.tth  -= (e.clientX - lx) * 0.005;
+    orbit.tphi -= (e.clientY - ly) * 0.004;
+    orbit.tphi = Math.max(0.18, Math.min(1.45, orbit.tphi));
+    lx = e.clientX; ly = e.clientY;
+  });
+  cv.addEventListener('pointerup',    ()=> down = false);
+  cv.addEventListener('pointercancel',()=> down = false);
+  if(!EMBED){
+    cv.addEventListener('wheel', e=>{
+      e.preventDefault(); stop();
+      orbit.tr = Math.max(18, Math.min(190, orbit.tr + e.deltaY * 0.07));
+    }, {passive:false});
+  }
+  cv.addEventListener('touchstart', e=>{
+    if(e.touches.length === 2){
+      pinch = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                         e.touches[0].clientY-e.touches[1].clientY);
+      stop();
+    }
+  }, {passive:true});
+  cv.addEventListener('touchmove', e=>{
+    if(e.touches.length === 2 && pinch){
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                           e.touches[0].clientY-e.touches[1].clientY);
+      orbit.tr = Math.max(18, Math.min(190, orbit.tr + (pinch - d) * 0.16));
+      pinch = d;
+    }
+  }, {passive:true});
+  cv.addEventListener('touchend', ()=> pinch = 0, {passive:true});
+}
+
+/* =====================================================================
+   Fundraiser bar
+   ===================================================================== */
+let barDone = false;
+function fillBar(){
+  if(barDone) return;
+  barDone = true;
+  const pct = Math.max(0, Math.min(100, CONFIG.raised / CONFIG.goal * 100));
+  document.getElementById('raised').textContent = CONFIG.currency + CONFIG.raised.toLocaleString('en-GB');
+  document.getElementById('goal').textContent   = CONFIG.goal.toLocaleString('en-GB');
+  document.getElementById('pctTxt').textContent = pct.toFixed(0) + '% of the way there';
+  setTimeout(()=>{ document.getElementById('barFill').style.width = pct + '%'; }, 120);
+}
+document.querySelector('#fund a.cta').setAttribute('href', CONFIG.donateUrl);
+
+/* =====================================================================
+   Shading + draw
+   ===================================================================== */
+const SUN = norm([0.52, 0.80, 0.34]);
+function lit(n){
+  const d = Math.max(0, dot(n, SUN));
+  return Math.max(0, Math.min(1.25, 0.35 + 0.58*d + Math.max(0,n[1])*0.14));
+}
+function solidFill(col, n, kind){
+  if(kind === 'shadow') return 'rgba(40,52,36,.30)';
+  let k = lit(n);
+  if(n[1] < -0.5) k *= 0.72;
+  return 'rgb(' + Math.round(Math.min(255,col[0]*k)) + ',' +
+                  Math.round(Math.min(255,col[1]*k)) + ',' +
+                  Math.round(Math.min(255,col[2]*k)) + ')';
+}
+const BP_BASE = { mass:0.165, glass:0.23, accent:0.30, ground:0.075, context:0.085,
+                  terrain:0.028, shadow:0, floor:0.12, plinth:0.165 };
+
+const flats = [], solids = [], mirror = [];
+
+function collect(list, a, opts){
+  if(a <= 0.02) return;
+  opts = opts || {};
+  const doMirror = (MODE === 'blueprint') && !INSIDE && REFLECT;
+  for(let i=0;i<list.length;i++){
+    const f = list[i];
+    if(f.kind === 'shadow' && (MODE !== 'solid' || INSIDE)) continue;
+    if(f.kind === 'plinth' && INSIDE) continue;
+    if(f.kind === 'terrain' && (MODE === 'blueprint' || INSIDE)) continue;
+    const front = dot(f.n, sub(f.c, eye)) < 0;
+    if(!f.noCull && !front && MODE === 'solid' && !INSIDE) continue;
+    const vc = toView(f.c);
+    if(vc[2] < 1.2) continue;
+
+    let clip = false;
+    if(INSIDE && opts.cut){
+      let minY = 1e9;
+      for(let k=0;k<f.p.length;k++) minY = Math.min(minY, f.p[k][1]);
+      if(minY > CUT - 0.05) continue;
+      clip = true;
+    }
+    const pts = new Array(f.p.length);
+    let bad = false;
+    for(let k=0;k<f.p.length;k++){
+      const q = f.p[k];
+      const py = clip ? Math.min(q[1], CUT) : q[1];
+      const v = toView([q[0], py, q[2]]);
+      if(v[2] < 0.4){ bad = true; break; }
+      pts[k] = project(v);
+    }
+    if(bad) continue;
+    const rec = { s:pts, z:vc[2], y:f.c[1], col:f.col, n:f.n, a:a * (opts.ghost || 1), kind:f.kind,
+                  ghost:!!opts.ghost && opts.ghost < 1 };
+    (f.flat ? flats : solids).push(rec);
+
+    if(doMirror && !f.flat && f.c[1] > 0.15 && !opts.ghost){
+      const mp = new Array(f.p.length);
+      let mbad = false;
+      for(let k=0;k<f.p.length;k++){
+        const q = f.p[k];
+        const v = toView([q[0], -q[1], q[2]]);
+        if(v[2] < 0.4){ mbad = true; break; }
+        mp[k] = project(v);
+      }
+      if(!mbad) mirror.push({ s:mp, z:vc[2], col:f.col, n:f.n, a:a, kind:f.kind });
+    }
+  }
+}
+
+function paintList(list, mirrored){
+  for(let i=0;i<list.length;i++){
+    const f = list[i];
+    let fill, stroke = null, lw = 1;
+    const asBlueprint = (MODE === 'blueprint' && !INSIDE) || f.ghost;
+    if(asBlueprint){
+      const base = BP_BASE[f.kind] !== undefined ? BP_BASE[f.kind] : BP_BASE.mass;
+      const al = base * (0.55 + 0.80*lit(f.n)) * f.a * (mirrored ? 0.42 : 1);
+      fill = 'rgba(104,164,220,' + al.toFixed(3) + ')';
+      if(!mirrored){
+        const sa = (f.kind === 'ground' || f.kind === 'terrain' ? 0.14 :
+                    (f.kind === 'accent' ? 0.46 : 0.30)) * f.a;
+        stroke = 'rgba(24,78,138,' + sa.toFixed(3) + ')';
+        lw = (f.kind === 'accent') ? 1.15 : 0.9;
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      if(mirrored) continue;
+      fill = solidFill(f.col, f.n, f.kind);
+      if(f.kind !== 'shadow') stroke = fill;
+      if(INSIDE){ stroke = 'rgba(90,60,35,.45)'; lw = 0.8; }
+      ctx.globalAlpha = f.a;
+    }
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(f.s[0][0], f.s[0][1]);
+    for(let k=1;k<f.s.length;k++) ctx.lineTo(f.s[k][0], f.s[k][1]);
+    ctx.closePath();
+    ctx.fill();
+    if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawGrid(){
+  const STEP = 10, EXT = 120;
+  ctx.lineWidth = 1;
+  for(let i=-EXT; i<=EXT; i+=STEP){
+    const major = (i % 50 === 0);
+    ctx.strokeStyle = major ? 'rgba(40,100,165,.24)' : 'rgba(60,130,195,.12)';
+    const segs = [[[i,0,-EXT],[i,0,EXT]], [[-EXT,0,i],[EXT,0,i]]];
+    for(let s=0;s<2;s++){
+      let a = toView(segs[s][0]), b = toView(segs[s][1]);
+      if(a[2] < 1 && b[2] < 1) continue;
+      if(a[2] < 1 || b[2] < 1){
+        const near = (a[2] < 1) ? b : a, far = (a[2] < 1) ? a : b;
+        const t = (near[2] - 1) / (near[2] - far[2]);
+        b = [ near[0] + (far[0]-near[0])*t, near[1] + (far[1]-near[1])*t, 1.0001 ];
+        a = near;
+      }
+      const s0 = project(a), s1 = project(b);
+      ctx.beginPath(); ctx.moveTo(s0[0],s0[1]); ctx.lineTo(s1[0],s1[1]); ctx.stroke();
+    }
+  }
+}
+
+const BOUNDARY = [[-23,-14],[12,-14],[12,22.5],[26.8,39.2],[29.6,42.4],[27.2,45.6],[24,42.6],[8.8,27.6],[-23,27.6]];
+function drawBoundary(){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(196,72,52,.6)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([9,5]);
+  ctx.beginPath();
+  let started = false;
+  for(let i=0;i<=BOUNDARY.length;i++){
+    const b = BOUNDARY[i % BOUNDARY.length];
+    const v = toView([b[0], 0.09, b[1]]);
+    if(v[2] < 1.2){ started = false; continue; }
+    const s = project(v);
+    if(!started){ ctx.moveTo(s[0], s[1]); started = true; }
+    else ctx.lineTo(s[0], s[1]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawFootprint(){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(24,78,138,.8)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  let started = false;
+  for(let i=0;i<=FOOT.length;i++){
+    const p = FOOT[i % FOOT.length];
+    const v = toView([p[0], 0.1, p[1]]);
+    if(v[2] < 1.2){ started = false; continue; }
+    const s = project(v);
+    if(!started){ ctx.moveTo(s[0], s[1]); started = true; }
+    else ctx.lineTo(s[0], s[1]);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dimLabel(txt, x, y){
+  ctx.font = '700 11px "Source Sans 3", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(255,255,255,.9)';
+  ctx.strokeText(txt, x, y);
+  ctx.fillStyle = 'rgba(30,95,158,.9)';
+  ctx.fillText(txt, x, y);
+}
+function dimLine(p0, p1, label){
+  const a = toView(p0), b = toView(p1);
+  if(a[2] < 2 || b[2] < 2) return;
+  const s0 = project(a), s1 = project(b);
+  ctx.strokeStyle = 'rgba(30,95,158,.6)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]);
+  const dx = s1[0]-s0[0], dy = s1[1]-s0[1], L = Math.hypot(dx,dy)||1;
+  const px = -dy/L*5, py = dx/L*5;
+  ctx.moveTo(s0[0]-px, s0[1]-py); ctx.lineTo(s0[0]+px, s0[1]+py);
+  ctx.moveTo(s1[0]-px, s1[1]-py); ctx.lineTo(s1[0]+px, s1[1]+py);
+  ctx.stroke();
+  dimLabel(label, (s0[0]+s1[0])/2, (s0[1]+s1[1])/2 - 7);
+}
+
+function drawChrome(){
+  const x = W - 62, y = 104;
+  ctx.save();
+  ctx.lineWidth = 1.3;
+  ctx.font = '700 10px "Source Sans 3", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  const a = -orbit.th;
+  ctx.strokeStyle = 'rgba(30,95,158,.28)';
+  ctx.beginPath(); ctx.arc(x, y, 21, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(30,95,158,.75)';
+  ctx.fillStyle   = 'rgba(30,95,158,.78)';
+  ctx.beginPath();
+  ctx.moveTo(x + Math.sin(a)*16, y + Math.cos(a)*16);
+  ctx.lineTo(x - Math.sin(a)*13, y - Math.cos(a)*13);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + Math.sin(a)*20, y + Math.cos(a)*20);
+  ctx.lineTo(x + Math.sin(a)*8 + Math.cos(a)*5.5, y + Math.cos(a)*8 - Math.sin(a)*5.5);
+  ctx.lineTo(x + Math.sin(a)*8 - Math.cos(a)*5.5, y + Math.cos(a)*8 + Math.sin(a)*5.5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillText('N', x + Math.sin(a)*31, y + Math.cos(a)*31 + 3.5);
+
+  const p0 = toView([0,0,0]), p1 = toView([20,0,0]);
+  if(p0[2] > 2 && p1[2] > 2){
+    const s0 = project(p0), s1 = project(p1);
+    const px = Math.max(28, Math.min(130, Math.abs(s1[0]-s0[0])));
+    const bx = W - 252, by = 108;
+    ctx.strokeStyle = 'rgba(30,95,158,.70)';
+    ctx.beginPath();
+    ctx.moveTo(bx, by); ctx.lineTo(bx + px, by);
+    ctx.moveTo(bx, by-4); ctx.lineTo(bx, by+4);
+    ctx.moveTo(bx+px, by-4); ctx.lineTo(bx+px, by+4);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(30,95,158,.75)';
+    ctx.fillText('20 m', bx, by - 8);
+  }
+  dimLine([-14.9,0.1,14.8], [9.1,0.1,14.8], '24.0 m');
+  dimLine([11.8,0.1,11.9], [11.8,0.1,-6.9], '18.8 m');
+  ctx.restore();
+}
+
+function draw(){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  if(MODE === 'blueprint' || INSIDE){
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.55, '#f3f7fb');
+    g.addColorStop(1, '#e3ecf5');
+  } else {
+    g.addColorStop(0, '#9ab5c9');
+    g.addColorStop(0.75, '#cfd8d2');
+    g.addColorStop(1, '#dfe0d4');
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+
+  flats.length = 0; solids.length = 0; mirror.length = 0;
+
+  if(INSIDE){
+    collect(SITE, 1, {ghost:0.35});
+    collect(SHELL, 1, {cut:true});
+    collect(G.past, alpha.past, {cut:true});
+    collect(G.present, alpha.present, {cut:true});
+    collect(G.future, alpha.future, {cut:true});
+    collect(INT, 1, {});
+  } else {
+    collect(SITE, 1);
+    collect(SHELL, 1);
+    collect(G.past,    alpha.past);
+    collect(G.present, alpha.present);
+    collect(G.future,  alpha.future);
+  }
+
+  flats.sort((a,b)=> (a.y - b.y) || (b.z - a.z));
+  solids.sort((a,b)=> b.z - a.z);
+  mirror.sort((a,b)=> b.z - a.z);
+
+  if(MODE === 'blueprint' || INSIDE){
+    paintList(flats, false);
+    drawGrid();
+    drawBoundary();
+    if(INSIDE) drawFootprint();
+    paintList(mirror, true);
+  } else {
+    paintList(flats, false);
+  }
+  paintList(solids, false);
+  if(MODE === 'blueprint' && !INSIDE) drawChrome();
+}
+
+/* =====================================================================
+   Loop
+   ===================================================================== */
+let last = 0, frames = 0;
+function tick(now){
+  requestAnimationFrame(tick);
+  frames++;
+  const dt = Math.min((now - last)/1000 || 0.016, 0.05);
+  last = now;
+
+  for(let i=0;i<STATES.length;i++){
+    const k = STATES[i].key, want = (i === current) ? 1 : 0;
+    alpha[k] += (want - alpha[k]) * Math.min(1, dt * 5);
+    if(Math.abs(alpha[k] - want) < 0.012) alpha[k] = want;
+  }
+
+  orbit.idle += dt;
+  if(!orbit.auto && orbit.idle > 16) orbit.auto = true;
+  if(orbit.auto) orbit.tth += dt * 0.035;
+
+  orbit.r   += (orbit.tr   - orbit.r)   * Math.min(1, dt * 2.4);
+  orbit.phi += (orbit.tphi - orbit.phi) * Math.min(1, dt * 2.4);
+  orbit.th  += (orbit.tth  - orbit.th)  * Math.min(1, dt * 4.0);
+
+  updateCamera();
+  draw();
+
+  for(let i=0;i<anEls.length;i++){
+    const a = anEls[i];
+    const show = a.m === 'in' ? INSIDE : ((MODE === 'blueprint') && !INSIDE);
+    if(!show){ a.el.classList.add('off'); continue; }
+    const v = toView(a.pos);
+    if(v[2] < 2){ a.el.classList.add('off'); continue; }
+    const s = project(v);
+    a.el.classList.remove('off');
+    a.el.style.left = s[0] + 'px';
+    a.el.style.top  = s[1] + 'px';
+  }
+  const showHS = (current === 2) && alpha.future > 0.7 && !INSIDE;
+  for(let i=0;i<hsEls.length;i++){
+    const h = hsEls[i];
+    if(!showHS || !h.pos){ h.el.classList.add('off'); continue; }
+    const v = toView(h.pos);
+    if(v[2] < 2){ h.el.classList.add('off'); continue; }
+    const s = project(v);
+    h.el.classList.remove('off');
+    h.el.style.left = s[0] + 'px';
+    h.el.style.top  = s[1] + 'px';
+  }
+}
+
+/* =====================================================================
+   Controls
+   ===================================================================== */
+function setMode(m){ MODE = m; }   /* exterior is blueprint-only now */
+function setInside(v){
+  INSIDE = v;
+  document.getElementById('inside').classList.toggle('hot', INSIDE);
+  document.getElementById('inside').textContent = INSIDE ? 'Exterior' : 'Look inside';
+  if(INSIDE){
+    orbit.tr = 34; orbit.tphi = 0.52; orbit.centre = [-2, 1.0, 3.5];
+  } else {
+    orbit.centre = [2, 2.0, 12];
+    const s = STATES[current];
+    orbit.tr = s.cam.r; orbit.tphi = s.cam.phi;
+  }
+}
+
+document.getElementById('inside').addEventListener('click', ()=> setInside(!INSIDE));
+const capBox = document.getElementById('caption');
+function setCapMin(v){
+  capBox.classList.toggle('min', v);
+  const t = document.getElementById('capToggle');
+  t.innerHTML = v ? '+' : '&minus;';
+  t.title = v ? 'Expand' : 'Collapse';
+  t.setAttribute('aria-label', v ? 'Expand description' : 'Collapse description');
+}
+document.getElementById('capToggle').addEventListener('click', e=>{
+  e.stopPropagation();
+  setCapMin(!capBox.classList.contains('min'));
+});
+capBox.addEventListener('click', ()=>{ if(capBox.classList.contains('min')) setCapMin(false); });
+document.getElementById('discBtn').addEventListener('click', ()=>{
+  document.getElementById('disclaimer').classList.toggle('open');
+});
+if(EMBED){
+  ['zin','zout'].forEach(id=> document.getElementById(id).style.display = '');
+  document.getElementById('zin').addEventListener('click', ()=>{
+    orbit.auto = false; orbit.idle = 0;
+    orbit.tr = Math.max(18, orbit.tr - 14);
+  });
+  document.getElementById('zout').addEventListener('click', ()=>{
+    orbit.auto = false; orbit.idle = 0;
+    orbit.tr = Math.min(190, orbit.tr + 14);
+  });
+}
+document.getElementById('snap').addEventListener('click', ()=>{
+  try{
+    const url = cv.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'abdullah-masjid-' + STATES[current].key + (INSIDE ? '-inside' : '-' + MODE) + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ alert('Could not export: ' + e.message); }
+});
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+function onResize(){
+  resize();
+  FOCAL = 1 / Math.tan((40 * Math.PI/180) / 2);
+  REFLECT = (W * H) < 2600000;
+}
+window.addEventListener('resize', onResize);
+onResize();
+if(EMBED){
+  ['title','fund','hint'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+  setCapMin(true);
+}
+setCaption(STATES[current]);
+tl.children[current].classList.add('on');
+updateCamera();
+draw();
+requestAnimationFrame(tick);
+
+loaderEl.style.opacity = 0;
+setTimeout(()=>{ if(loaderEl.parentNode) loaderEl.parentNode.removeChild(loaderEl); }, 550);
+
+window.__masjid = {
+  go:go, orbit:orbit, STATES:STATES, alpha:alpha, frames:()=>frames,
+  setMode:setMode, setInside:setInside,
+  counts:{ site:SITE.length, shell:SHELL.length, interior:INT.length,
+           past:G.past.length, present:G.present.length, future:G.future.length }
+};
+
+} catch(err){
+  fatal('The site model failed to start.\n\n' + (err && err.stack ? err.stack : err));
+}
+})();
+</script>
+</body>
+</html>
